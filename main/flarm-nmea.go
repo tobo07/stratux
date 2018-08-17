@@ -91,7 +91,7 @@ func makeFlarmPFLAAString(ti TrafficInfo) (msg string, valid bool) {
 	idType = 1
 
 	// determine distance and bearing to target
-	dist, bearing, distN, distE := distRect(float64(mySituation.Lat), float64(mySituation.Lng), float64(ti.Lat), float64(ti.Lng))
+	dist, bearing, distN, distE := distRect(float64(mySituation.GPSLatitude), float64(mySituation.GPSLongitude), float64(ti.Lat), float64(ti.Lng))
 	if globalSettings.DEBUG {
 		log.Printf("FLARM - ICAO target %X (%s) is %.1f meters away at %.1f degrees\n", ti.Icao_addr, ti.Tail, dist, bearing)
 	}
@@ -107,9 +107,9 @@ func makeFlarmPFLAAString(ti TrafficInfo) (msg string, valid bool) {
 		relativeEast = int16(distE)
 	}
 
-	altf := mySituation.Pressure_alt
+	altf := mySituation.BaroPressureAltitude
 	if !isTempPressValid() { // if no pressure altitude available, use GPS altitude
-		altf = float64(mySituation.Alt)
+		altf = float64(mySituation.GPSHeightAboveEllipsoid)
 	}
 	relativeVertical = int16(float64(ti.Alt)*0.3048 - altf*0.3048) // convert to meters
 
@@ -204,18 +204,18 @@ func makeGPRMCString() string {
 		LastGroundTrackTime     time.Time
 	*/
 
-	lastFix := float64(mySituation.LastFixSinceMidnightUTC)
+	lastFix := float64(mySituation.GPSLastFixSinceMidnightUTC)
 	hr := math.Floor(lastFix / 3600)
 	lastFix -= 3600 * hr
 	mins := math.Floor(lastFix / 60)
 	sec := lastFix - mins*60
 
 	status := "V"
-	if isGPSValid() && mySituation.Quality > 0 {
+	if isGPSValid() && mySituation.GPSFixQuality > 0 {
 		status = "A"
 	}
 
-	lat := float64(mySituation.Lat)
+	lat := float64(mySituation.GPSLatitude)
 	ns := "N"
 	if lat < 0 {
 		lat = -lat
@@ -227,7 +227,7 @@ func makeGPRMCString() string {
 	lat = deg*100 + min
 
 	ew := "E"
-	lng := float64(mySituation.Lng)
+	lng := float64(mySituation.GPSLongitude)
 	if lng < 0 {
 		lng = -lng
 		ew = "W"
@@ -237,15 +237,15 @@ func makeGPRMCString() string {
 	min = (lng - deg) * 60
 	lng = deg*100 + min
 
-	gs := float32(mySituation.GroundSpeed)
-	trueCourse := float32(mySituation.TrueCourse)
+	gs := float32(mysituation.GPSGroundSpeed)
+	trueCourse := float32(mySituation.GPSTrueCourse)
 	yy, mm, dd := time.Now().UTC().Date()
 	yy = yy % 100
 	var magVar, mvEW string
 	mode := "N"
-	if mySituation.Quality == 1 {
+	if mySituation.GPSFixQuality == 1 {
 		mode = "A"
-	} else if mySituation.Quality == 2 {
+	} else if mySituation.GPSFixQuality == 2 {
 		mode = "D"
 	}
 
@@ -299,7 +299,7 @@ func makeGPGGAString() string {
 	mins := math.Floor(lastFix / 60)
 	sec := lastFix - mins*60
 
-	lat := float64(mySituation.Lat)
+	lat := float64(mysituation.GPSLatitude)
 	ns := "N"
 	if lat < 0 {
 		lat = -lat
@@ -311,7 +311,7 @@ func makeGPGGAString() string {
 	lat = deg*100 + min
 
 	ew := "E"
-	lng := float64(mySituation.Lng)
+	lng := float64(mySituation.GPSLongitude)
 	if lng < 0 {
 		lng = -lng
 		ew = "W"
