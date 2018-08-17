@@ -69,6 +69,7 @@ const (
 	NETWORK_GDL90_STANDARD = 1
 	NETWORK_AHRS_FFSIM     = 2
 	NETWORK_AHRS_GDL90     = 4
+	NETWORK_FLARM_NMEA     = 8
 	dhcp_lease_file        = "/var/lib/dhcp/dhcpd.leases"
 	dhcp_lease_dir         = "/var/lib/dhcp"
 	extra_hosts_file       = "/etc/stratux-static-hosts.conf"
@@ -170,9 +171,14 @@ func isThrottled(k string) bool {
 func sendToAllConnectedClients(msg networkMessage) {
 	if (msg.msgType & NETWORK_GDL90_STANDARD) != 0 {
 		// It's a GDL90 message. Send to serial output channel (which may or may not cause something to happen).
-		serialOutputChan <- msg.msg
-		networkGDL90Chan <- msg.msg
-	}
+		if !globalSettings.NetworkFLARM {
+					serialOutputChan <- msg.msg // don't pollute the serial port with GDL90 messages if FLARM is active
+				}
+				networkGDL90Chan <- msg.msg
+
+			} else if msg.msgType&NETWORK_FLARM_NMEA != 0 {
+				serialOutputChan <- msg.msg
+			}
 
 	netMutex.Lock()
 	defer netMutex.Unlock()
@@ -236,6 +242,11 @@ func serialOutWatcher() {
 	serialTicker := time.NewTicker(30 * time.Second)
 
 	serialDev := "/dev/serialout0" //FIXME: This is temporary. Only one serial output device for now.
+
+	if globalSettings.Prolific_Serial_Out {
+			serialDev = "/dev/prolific0" //FIXME: This is also temporary.
+			log.Printf("serialOutWatcher: Attempting to connect /dev/prolific0\n")
+		}
 
 	for {
 		select {

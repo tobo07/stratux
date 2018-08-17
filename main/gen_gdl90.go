@@ -1106,6 +1106,8 @@ type settings struct {
 	SerialOutputs        map[string]serialConnection
 	DisplayTrafficSource bool
 	DEBUG                bool
+	NetworkFLARM         bool
+	Prolific_Serial_Out  bool 
 	ReplayLog            bool
 	AHRSLog              bool
 	IMUMapping           [2]int     // Map from aircraft axis to sensor axis: accelerometer
@@ -1180,8 +1182,11 @@ func defaultSettings() {
 	globalSettings.NetworkOutputs = []networkConnection{
 		{Conn: nil, Ip: "", Port: 4000, Capability: NETWORK_GDL90_STANDARD | NETWORK_AHRS_GDL90},
 		//		{Conn: nil, Ip: "", Port: 49002, Capability: NETWORK_AHRS_FFSIM},
+		{Conn: nil, Ip: "", Port: 10110, Capability: NETWORK_FLARM_NMEA}, // UDP output on IANA-assigned NMEA port. Compatible with XCSoar
 	}
 	globalSettings.DEBUG = false
+	globalSettings.NetworkFLARM = true // default to true for the FLARM test branch; disable if committing to master
+	globalSettings.Prolific_Serial_Out = false // enabling this will disable BU-353-S4 GPS, which also uses the Profilic USB-serial bridge
 	globalSettings.DisplayTrafficSource = false
 	globalSettings.ReplayLog = false //TODO: 'true' for debug builds.
 	globalSettings.AHRSLog = false
@@ -1564,9 +1569,10 @@ func main() {
 	// Start the heartbeat message loop in the background, once per second.
 	go heartBeatSender()
 
-	// Initialize the (out) network handler.
+	// Initialize the (out) network handler and TCP server for FLARM-NMEA messages
 	initNetwork()
-
+	tcpNMEAListener()
+	
 	// Start printing stats periodically to the logfiles.
 	go printStats()
 
