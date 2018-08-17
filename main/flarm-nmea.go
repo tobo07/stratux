@@ -109,9 +109,9 @@ func makeFlarmPFLAAString(ti TrafficInfo) (msg string, valid bool) {
 
 	altf := mySituation.BaroPressureAltitude
 	if !isTempPressValid() { // if no pressure altitude available, use GPS altitude
-		altf = float64(mySituation.GPSHeightAboveEllipsoid)
+		altf = float32(mySituation.GPSAltitudeMSL)
 	}
-	relativeVertical = int16(float64(ti.Alt)*0.3048 - altf*0.3048) // convert to meters
+	relativeVertical = int16(float32(ti.Alt)*0.3048 - altf*0.3048) // convert to meters
 
 
 	
@@ -215,7 +215,7 @@ func makeGPRMCString() string {
 		status = "A"
 	}
 
-	lat := float64(mySituation.GPSLatitude)
+	lat := float32(mySituation.GPSLatitude)
 	ns := "N"
 	if lat < 0 {
 		lat = -lat
@@ -293,7 +293,7 @@ func makeGPGGAString() string {
 	*/
 
 	thisSituation := mySituation
-	lastFix := float64(thisSituation.LastFixSinceMidnightUTC)
+	lastFix := float64(thisSituation.GPSLastFixSinceMidnightUTC)
 	hr := math.Floor(lastFix / 3600)
 	lastFix -= 3600 * hr
 	mins := math.Floor(lastFix / 60)
@@ -321,7 +321,7 @@ func makeGPGGAString() string {
 	min = (lng - deg) * 60
 	lng = deg*100 + min
 
-	numSV := thisSituation.Satellites
+	numSV := thisSituation.GPSSatellites
 	if numSV > 12 { // standard messages limit satellite count to 12
 		numSV = 12
 	}
@@ -330,13 +330,13 @@ func makeGPGGAString() string {
 	//if hdop < 0.7 {hdop = 0.7}
 	hdop := 1.0 // hard code for now (testing)
 
-	alt := thisSituation.Alt / 3.28084
-	geoidSep := thisSituation.GeoidSep / 3.28084
+	alt := thisSituation.GPSAltitudeMSL / 3.28084
+	geoidSep := thisSituation.GPSGeoidSep / 3.28084
 
 	var msg string
 
 	if isGPSValid() {
-		msg = fmt.Sprintf("GPGGA,%02.f%02.f%05.2f,%010.5f,%s,%011.5f,%s,%d,%d,%.2f,%.1f,M,%.1f,M,,", hr, mins, sec, lat, ns, lng, ew, thisSituation.Quality, numSV, hdop, alt, geoidSep)
+		msg = fmt.Sprintf("GPGGA,%02.f%02.f%05.2f,%010.5f,%s,%011.5f,%s,%d,%d,%.2f,%.1f,M,%.1f,M,,", hr, mins, sec, lat, ns, lng, ew, thisSituation.GPSFixQuality, numSV, hdop, alt, geoidSep)
 	} else {
 		msg = fmt.Sprintf("GPTXT,No valid Stratux GPS position") // return text message type if no position
 	}
