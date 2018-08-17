@@ -222,8 +222,8 @@ func makeGPRMCString() string {
 		ns = "S"
 	}
 
-	deg := math.Floor(lat)
-	min := (lat - deg) * 60
+	deg := math.Floor(float64(lat))
+	min := ((float64)lat - deg) * 60
 	lat = deg*100 + min
 
 	ew := "E"
@@ -237,7 +237,7 @@ func makeGPRMCString() string {
 	min = (lng - deg) * 60
 	lng = deg*100 + min
 
-	gs := float32(mysituation.GPSGroundSpeed)
+	gs := float32(mySituation.GPSGroundSpeed)
 	trueCourse := float32(mySituation.GPSTrueCourse)
 	yy, mm, dd := time.Now().UTC().Date()
 	yy = yy % 100
@@ -299,7 +299,7 @@ func makeGPGGAString() string {
 	mins := math.Floor(lastFix / 60)
 	sec := lastFix - mins*60
 
-	lat := float64(mysituation.GPSLatitude)
+	lat := float64(mySituation.GPSLatitude)
 	ns := "N"
 	if lat < 0 {
 		lat = -lat
