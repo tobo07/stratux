@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2015-2016 Christopher Young
+	Copyright (c) 2015-2017 Christopher Young
 	Distributable under the terms of The "BSD New" License
 	that can be found in the LICENSE file, herein included
 	as part of this header.
@@ -189,6 +189,8 @@ func sendTrafficUpdates() {
 	}
 
 	msgs := make([][]byte, 1)
+	msgFLARM := ""
+	numFLARMTargets := int16(0)
 	if globalSettings.DEBUG && (stratuxClock.Time.Second()%15) == 0 {
 		log.Printf("List of all aircraft being tracked:\n")
 		log.Printf("==================================================================\n")
@@ -242,6 +244,19 @@ func sendTrafficUpdates() {
 					msgs = append(msgs, make([]byte, 0))
 				}
 				msgs[cur_n] = append(msgs[cur_n], makeTrafficReportMsg(ti)...)
+
+
+				/* FLARM NMEA message handling */
+				thisMsgFLARM, validFLARM := makeFlarmPFLAAString(ti)
+				//log.Printf(thisMsgFLARM)
+				if validFLARM {
+					//sendNetFLARM(thisMsgFLARM)
+					numFLARMTargets++
+					msgFLARM = msgFLARM + thisMsgFLARM
+					//log.Printf("%v\n",[]byte(thisMsgFLARM))
+				} else {
+					//log.Printf("FLARM output: Traffic %X couldn't be translated\n", ti.Icao_addr)
+				}
 			}
 		}
 	}
@@ -252,33 +267,60 @@ func sendTrafficUpdates() {
 			sendGDL90(msg, false)
 		}
 	}
-}
+
+	
+	/*
+	Send all FLARM NMEA messages in the following order:
+		1. GPRMC position sentence
+		2. GPGGA position sentence
+		3. GPGSA status string (currently hardcoded for test)
+		4. PFLAA sentences for each nearby aircraft
+		5. PFLAU sentence summarizing number of targets
+	*/
+		sendNetFLARM(makeGPRMCString())
+		sendNetFLARM(makeGPGGAString())
+		sendNetFLARM("$GPGSA,A,3,,,,,,,,,,,,,1.0,1.0,1.0*33\r\n")
+		if len(msgFLARM) > 0 {
+			sendNetFLARM(msgFLARM)
+		}
+	// syntax: PFLAU,<RX>,<TX>,<GPS>,<Power>,<AlarmLevel>,<RelativeBearing>,<AlarmType>,<RelativeVertical>,<RelativeDistance>,<ID>
+		msgPFLAU := fmt.Sprintf("PFLAU,%d,1,2,1,0,,0,,", numFLARMTargets)
+	// TODO: update <gps> field with flight / ground status; provide bearing to alert targets
+	// TODO: update alert status / bearing for nearest alert target
+		checksumPFLAU := byte(0x00)
+		for i := range msgPFLAU {
+			checksumPFLAU = checksumPFLAU ^ byte(msgPFLAU[i])
+		}
+		msgPFLAU = (fmt.Sprintf("$%s*%02X\r\n", msgPFLAU, checksumPFLAU))
+		sendNetFLARM(msgPFLAU)
+		
+	}
 
 // Send update to attached JSON client.
-func registerTrafficUpdate(ti TrafficInfo) {
+	func registerTrafficUpdate(ti TrafficInfo) {
 	//logTraffic(ti) // moved to sendTrafficUpdates() to reduce SQLite log size
 	/*
 		if !ti.Position_valid { // Don't send unless a valid position exists.
 			return
 		}
 	*/ // Send all traffic to the websocket and let JS sort it out. This will provide user indication of why they see 1000 ES messages and no traffic.
-	trafficUpdate.SendJSON(ti)
-}
+		trafficUpdate.SendJSON(ti)
+	}
 
-func isTrafficAlertable(ti TrafficInfo) bool {
+	func isTrafficAlertable(ti TrafficInfo) bool {
 	// Set alert bit if possible and traffic is within some threshold
 	// TODO: Could be more intelligent, taking into account headings etc.
-	if !ti.BearingDist_valid {
+		if !ti.BearingDist_valid {
 		// If not able to calculate the distance to the target, let the alert bit be set always.
-		return true
-	}
-	if ti.BearingDist_valid &&
+			return true
+		}
+		if ti.BearingDist_valid &&
 		ti.Distance < 3704 { // 3704 meters, 2 nm.
-		return true
-	}
+			return true
+		}
 
-	return false
-}
+		return false
+	}
 
 func makeTrafficReportMsg(ti TrafficInfo) []byte {
 	msg := make([]byte, 28)

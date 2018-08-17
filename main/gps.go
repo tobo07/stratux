@@ -204,7 +204,7 @@ func initGPSSerial() bool {
 	} else if _, err := os.Stat("/dev/ublox6"); err == nil { // u-blox 6 (VK-162 Rev 1).
 		device = "/dev/ublox6"
 		globalStatus.GPS_detected_type = GPS_TYPE_UBX6
-	} else if _, err := os.Stat("/dev/prolific0"); err == nil { // Assume it's a BU-353-S4 SIRF IV.
+	} else if _, err := os.Stat("/dev/prolific0"); (err == nil) && !globalSettings.Prolific_Serial_Out { // Assume it's a BU-353-S4 SIRF IV, but only if serial out isn't using this bridge
 		//TODO: Check a "serialout" flag and/or deal with multiple prolific devices.
 		isSirfIV = true
 		baudrate = 4800
