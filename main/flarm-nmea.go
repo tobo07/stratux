@@ -223,8 +223,8 @@ func makeGPRMCString() string {
 	}
 
 	deg := math.Floor(float64(lat))
-	min := ((float64)lat - deg) * 60
-	lat = deg*100 + min
+	min := (float64(lat) - deg) * 60
+	lat = float32(deg*100 + min)
 
 	ew := "E"
 	lng := float64(mySituation.GPSLongitude)
