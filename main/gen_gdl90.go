@@ -1182,7 +1182,7 @@ func defaultSettings() {
 	globalSettings.NetworkOutputs = []networkConnection{
 		{Conn: nil, Ip: "", Port: 4000, Capability: NETWORK_GDL90_STANDARD | NETWORK_AHRS_GDL90},
 		//		{Conn: nil, Ip: "", Port: 49002, Capability: NETWORK_AHRS_FFSIM},
-		{Conn: nil, Ip: "", Port: 10110, Capability: NETWORK_FLARM_NMEA}, // UDP output on IANA-assigned NMEA port. Compatible with XCSoar
+	//TB not used	{Conn: nil, Ip: "", Port: 10110, Capability: NETWORK_FLARM_NMEA}, // UDP output on IANA-assigned NMEA port. Compatible with XCSoar
 	}
 	globalSettings.DEBUG = false
 	globalSettings.NetworkFLARM = true // default to true for the FLARM test branch; disable if committing to master
@@ -1569,9 +1569,11 @@ func main() {
 	// Start the heartbeat message loop in the background, once per second.
 	go heartBeatSender()
 
-	// Initialize the (out) network handler and TCP server for FLARM-NMEA messages
+	// Initialize the (out) network handler
 	initNetwork()
-	tcpNMEAListener()
+	// TB disabled as that call leads to undefined system behaviour. Fixme
+	// Initialize the TCP server for FLARM-NMEA messages
+	// TB tcpNMEAListener()
 	
 	// Start printing stats periodically to the logfiles.
 	go printStats()
