@@ -14,10 +14,10 @@ package main
 import (
 	//"bufio"
 	"fmt"
-	"io"
+// TB	"io"
 	"log"
 	"math"
-	"net"
+// TB	"net"
 	"time"
 )
 
@@ -33,7 +33,7 @@ func sendNetFLARM(msg string) {
 	if globalSettings.NetworkFLARM {
 		sendMsg([]byte(msg), NETWORK_FLARM_NMEA, false) // UDP and future serial output. Traffic messages are always non-queuable -- hence 'false'.
 	}
-	msgchan <- msg // TCP output.
+// TB	msgchan <- msg // TCP output.
 
 }
 
@@ -360,6 +360,9 @@ http://synflood.at/tmp/golang-slides/mrmcd2012.html#2
 
 ********/
 
+/* TB ***********
+Basic TCP Server not used as leads to undefined system behaviour, only send NMEA messages via serial output for the time being
+
 type tcpClient struct {
 	conn net.Conn
 	ch   chan string
@@ -367,12 +370,13 @@ type tcpClient struct {
 
 var msgchan chan string
 
-func tcpNMEAListener() {
-	ln, err := net.Listen("tcp", ":2000")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+// TB tcpNMEAListener disabled as calling it leads to undefined system behaviour
+// TB func tcpNMEAListener() {
+// TB 	ln, err := net.Listen("tcp", ":2000")
+// TB 	if err != nil {
+// TB 		fmt.Println(err)
+// TB 		return
+// TB 	}
 
 	msgchan = make(chan string, 1024) // buffered channel n = 1024
 	addchan := make(chan tcpClient)
@@ -405,6 +409,8 @@ func (c tcpClient) ReadLinesInto(ch chan<- string) {
 }
 */
 
+/* TB ***********
+Basic TCP Server not used as leads to undefined system behaviour, only send NMEA messages via serial output for the time being
 func (c tcpClient) WriteLinesFrom(ch <-chan string) {
 	for msg := range ch {
 		_, err := io.WriteString(c.conn, msg)
@@ -425,7 +431,8 @@ func (c tcpClient) WriteLinesFrom(ch <-chan string) {
 	 4. Upon a client disconnect, deregister the client.
 */
 
-
+/* TB ***********
+Basic TCP Server not used as leads to undefined system behaviour, only send NMEA messages via serial output for the time being
 func handleConnection(c net.Conn, msgchan chan<- string, addchan chan<- tcpClient, rmchan chan<- tcpClient) {
 	//bufc := bufio.NewReader(c)
 	defer c.Close()
@@ -454,6 +461,9 @@ func handleConnection(c net.Conn, msgchan chan<- string, addchan chan<- tcpClien
 		log.Printf("Received passcode %s from client %s\n", passcode, c.RemoteAddr())
 	}
 	*/
+
+	/* TB ***********
+Basic TCP Server not used as leads to undefined system behaviour, only send NMEA messages via serial output for the time being
 	io.WriteString(c, "AOK") // correct passcode received; continue to writes
 	log.Printf("Correct passcode on client %s. Unlocking.\n", c.RemoteAddr())
 	// Register user
@@ -489,3 +499,4 @@ func handleMessages(msgchan <-chan string, addchan <-chan tcpClient, rmchan <-ch
 		}
 	}
 }
+*/
